@@ -65,7 +65,7 @@ def fix_seeds():
 
 def get_data():
     mainpath = "/Users/xtian/Documents/Quinn Research Group/accelerometer_research/data/HMP_Dataset"
-    dataset="HAR_b"
+    dataset="HMP"
     if dataset == "HMP":
         activity_labels = hmp.get_labels(mainpath)
         file_dict       = hmp.get_filepaths(mainpath)
