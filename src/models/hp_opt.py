@@ -2,6 +2,22 @@ from numpy.random import seed
 seed(1)
 from tensorflow import set_random_seed
 set_random_seed(2)
+# source for the above 4 lines:
+# https://machinelearningmastery.com/reproducible-results-neural-networks-keras/
+# as stated in post: GPU and tensorflow may both still have backend nuances
+# which prevent reproducibility; however, since this code is for hyperparameter
+# optimization, should be ok
+
+import sys
+import os
+# for p in sys.path: print(p)
+PACKAGE_PARENT = '..'
+SCRIPT_DIR = os.path.dirname(os.path.realpath(os.path.join(os.getcwd(), os.path.expanduser(__file__))))
+sys.path.append(os.path.normpath(os.path.join(SCRIPT_DIR, PACKAGE_PARENT)))
+# source: https://stackoverflow.com/questions/16981921/relative-imports-in-python-3
+sys.path.append(os.path.dirname(os.path.normpath(os.path.join(SCRIPT_DIR, PACKAGE_PARENT)))) # this is actually what was needed (added accelstm to path)
+# sys.path.append("..") # https://stackoverflow.com/questions/30669474/beyond-top-level-package-error-in-relative-import
+# for p in sys.path: print(p)
 
 import numpy as np
 import tensorflow as tf
@@ -9,6 +25,7 @@ import random as rn
 from sklearn.preprocessing import LabelEncoder, StandardScaler
 from sklearn.model_selection import StratifiedKFold, ParameterSampler
 from sklearn.cross_validation import train_test_split
+import keras
 from keras.models import Sequential
 from keras.layers.core import Dropout, Activation, Dense
 from keras.layers import BatchNormalization, LSTM
@@ -17,80 +34,42 @@ from keras.regularizers import l2, l1
 from keras.optimizers import SGD, RMSprop, Adam
 from keras.callbacks import CSVLogger, TensorBoard, EarlyStopping, ModelCheckpoint
 from keras import backend as K
-import os
 from hyperopt import Trials, STATUS_OK, tpe
 from hyperas import optim
 from hyperas.distributions import choice, uniform, conditional
-import HMP_get_data as hmp
-import HAR_get_data as har
+from src.data import HMP_get_data
+from src.data import HAR_get_data
+# from ..data import HAR_get_data as har #https://stackoverflow.com/questions/20075884/python-import-module-from-another-directory-at-the-same-level-in-project-hierar
 from tabulate import tabulate
 
-def fix_seeds():
-    """
-    Fixes the seeds for reproducibility.
-    """
-    # The below is necessary in Python 3.2.3 onwards to
-    # have reproducible behavior for certain hash-based operations.
-    # See these references for further details:
-    # https://docs.python.org/3.4/using/cmdline.html#envvar-PYTHONHASHSEED
-    # https://github.com/keras-team/keras/issues/2280#issuecomment-306959926
-
-    # fix random seed for reproducibility
-    os.environ['PYTHONHASHSEED'] = '0'
-
-    # The below is necessary for starting Numpy generated random numbers
-    # in a well-defined initial state.
-    seed = np.random.seed(42)
-
-    # The below is necessary for starting core Python generated random numbers
-    # in a well-defined state.
-    rn.seed(12345)
-
-    # Force TensorFlow to use single thread.
-    # Multiple threads are a potential source of
-    # non-reproducible results.
-    # For further details, see: https://stackoverflow.com/questions/42022950/which-seeds-have-to-be-set-where-to-realize-100-reproducibility-of-training-res
-
-    session_conf = tf.ConfigProto(intra_op_parallelism_threads=1, inter_op_parallelism_threads=1)
-
-    # The below tf.set_random_seed() will make random number generation
-    # in the TensorFlow backend have a well-defined initial state.
-    # For further details, see: https://www.tensorflow.org/api_docs/python/tf/set_random_seed
-
-    tf.set_random_seed(1234)
-
-    sess = tf.Session(graph=tf.get_default_graph(), config=session_conf)
-    K.set_session(sess)
-    return
-
 def get_data():
-    mainpath = "/Users/xtian/Documents/Quinn Research Group/accelerometer_research/data/HMP_Dataset"
-    dataset="HMP"
-    if dataset == "HMP":
-        activity_labels = hmp.get_labels(mainpath)
-        file_dict       = hmp.get_filepaths(mainpath)
-        files           = list(file_dict.keys())
+    datapath = "../../data/external/"
+    dataset="HAR_t"
+    # dataset="HMP"
+    # if dataset == "HMP":
+    #     activity_labels = hmp.get_labels(mainpath)
+    #     file_dict       = hmp.get_filepaths(mainpath)
+    #     files           = list(file_dict.keys())
+    #
+    #     # build training inputs and labels
+    #     # X: each row is a single activity file for one individual's triaxial data
+    #     # y and labels are same shape (label for each timepoint)
+    #     X, y, labels = hmp.build_inputs(
+    #         files,
+    #         activity_labels,
+    #         file_dict)
+    #     # X = pd.read_csv("HMP_X.csv", header=None)
+    #     # y = pd.read_csv("HMP_y.csv", header=None)
+    #     # labels = pd.read_csv("HMP_labels.csv", header=None)
 
-        # build training inputs and labels
-        # X: each row is a single activity file for one individual's triaxial data
-        # y and labels are same shape (label for each timepoint)
-        X, y, labels = hmp.build_inputs(
-            files,
-            activity_labels,
-            file_dict)
-        # X = pd.read_csv("HMP_X.csv", header=None)
-        # y = pd.read_csv("HMP_y.csv", header=None)
-        # labels = pd.read_csv("HMP_labels.csv", header=None)
 
+    mainpath = datapath + "HAR"
+    data, l, s = HAR_get_data.get_filepaths(mainpath)
+    X_t, X_b, X_a, y, labels = HAR_get_data.fetch_and_format(data, l , s)
+    if dataset == "HAR_t": X = X_t
+    elif dataset == "HAR_b": X = X_b
 
-    elif "HAR" in dataset:
-        mainpath = "/Users/xtian/Documents/Quinn Research Group/accelerometer_research/data/UCI HAR Dataset"
-        data, l, s = har.get_filepaths(mainpath)
-        X_t, X_b, y, labels = har.fetch_and_format(data, l , s)
-        if dataset == "HAR_t": X = X_t
-        elif dataset == "HAR_b": X = X_b
-
-    # shuffle the files so that activities (classes) aren't grouped together
+    # shuffle the participants' data/labels
     shuffle_idx = np.random.permutation(len(X))
     X_shuffle = X[shuffle_idx]
     y_shuffle = y[shuffle_idx]
@@ -104,7 +83,7 @@ def get_data():
     labels_train = labels_shuffle[:round(0.8*len(labels_shuffle))]
     labels_test = labels_shuffle[round(0.8*len(labels_shuffle)):]
 
-    # concatenate each activity file together into one long activity sequence
+    # concatenate each file together into one long activity sequence
     X_traintogether = []
     y_traintogether = []
     X_testtogether = []
@@ -236,28 +215,32 @@ def create_model(trainx_windows, testx_windows, trainy, testy):
           loss='categorical_crossentropy', metrics=['accuracy'])
 
 
-    model_saver = ModelCheckpoint('model.{epoch:02d}-{val_loss:.2f}.hdf5')
+    # model_saver = ModelCheckpoint('model.{epoch:02d}-{val_loss:.2f}.hdf5')
     early_stop = EarlyStopping(monitor='val_loss', min_delta=0.01, patience=20, verbose=0, mode='auto')
 
+    # added to collect optimization results
+    if 'results' not in globals():
+        global results
+        results = []
+
     print(trainx_windows.shape)
-    results = model.fit(trainx_windows, trainy, epochs=10000, batch_size={{choice(np.arange(32, 450))}}, validation_split=0.2, callbacks=[early_stop, model_saver])
+    results = model.fit(trainx_windows, trainy, epochs=10000, batch_size={{choice(np.arange(32, 450))}}, validation_split=0.2, callbacks=[early_stop]) #, model_saver])
     score, acc = model.evaluate(testx_windows, testy, verbose=1)
-    valLoss = result.history['val_mean_absolute_error'][-1]
+    # valLoss = result.history['val_mean_absolute_error'][-1]
     parameters = space
     results.append(parameters)
 
     tab_results = tabulate(results, headers="keys", tablefmt="fancy_grid", floatfmt=".8f")
     weights = model.get_weights()
     print(weights)
-    with open('weights.txt', 'a') as weights:
-        weights.write("model: {}\n\tlayer: {}\n\tweights: {}\n\tmodel_details: {}".format(model, layer, weights, tab_results))
+    with open('../../output/hp_opt/weights.txt', 'a+') as model_summ:
+        model_summ.write("model: {}\n\tweights:\n{}\n\tmodel_details:\n{}".format(model, list(weights), tab_results))
 
-    print(tab_results)
+    # print(tab_results)
 
     return {'loss': -acc, 'status': STATUS_OK, 'model': model}
 
 if __name__ == "__main__":
-    # fix_seeds()
 
     best_run, best_model = optim.minimize(model=create_model,
         data=get_data,
