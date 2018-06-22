@@ -207,13 +207,21 @@ def create_model(trainx_windows, testx_windows, trainy, testy):
     model.add(Dense(6))
     model.add(Activation('softmax'))
 
-    adam = keras.optimizers.Adam(lr={{choice([10**-6, 10**-5, 10**-4, 10**-3, 10**-2, 10**-1])}}, clipnorm=1.)
-    rmsprop = keras.optimizers.RMSprop(lr={{choice([10**-6, 10**-5, 10**-4, 10**-3, 10**-2, 10**-1])}}, clipnorm=1.)
-    sgd = keras.optimizers.SGD(lr={{choice([10**-6, 10**-5, 10**-4, 10**-3, 10**-2, 10**-1])}}, clipnorm=1.)
+    adam_lr = keras.optimizers.Adam(lr={{choice([10**-6, 10**-5, 10**-4, 10**-3, 10**-2, 10**-1])}}, clipnorm=1.)
+    rmsprop_lr = keras.optimizers.RMSprop(lr={{choice([10**-6, 10**-5, 10**-4, 10**-3, 10**-2, 10**-1])}}, clipnorm=1.)
+    sgd_lr = keras.optimizers.SGD(lr={{choice([10**-6, 10**-5, 10**-4, 10**-3, 10**-2, 10**-1])}}, clipnorm=1.)
 
-    model.compile(optimizer={{choice(['sgd', 'rmsprop', 'adagrad', 'adadelta', 'nadam', 'adam'])}},
-          loss='categorical_crossentropy', metrics=['accuracy'])
+    # model.compile(optimizer={{choice(['sgd', 'rmsprop', 'adagrad', 'adadelta', 'nadam', 'adam'])}},
+    #       loss='categorical_crossentropy', metrics=['accuracy'])
 
+    optims = {{choice(['adam', 'sgd', 'rmsprop', 'adagrad', 'nadam', 'adadelta'])}}
+    if optims == 'adam': optim = adam_lr
+    elif optims == 'rmsprop': optim = rmsprop_lr
+    elif optims == 'sgd': optim = sgd_lr
+    else: optim = optims
+
+    model.compile(loss='categorical_crossentropy', metrics=['accuracy'],
+                  optimizer=optim)
 
     # model_saver = ModelCheckpoint('model.{epoch:02d}-{val_loss:.2f}.hdf5')
     early_stop = EarlyStopping(monitor='val_loss', min_delta=0.01, patience=20, verbose=0, mode='auto')
@@ -228,11 +236,12 @@ def create_model(trainx_windows, testx_windows, trainy, testy):
     score, acc = model.evaluate(testx_windows, testy, verbose=1)
     # valLoss = result.history['val_mean_absolute_error'][-1]
     parameters = space
+    print(parameters)
     results.append(parameters)
 
     tab_results = tabulate(results, headers="keys", tablefmt="fancy_grid", floatfmt=".8f")
     weights = model.get_weights()
-    print(weights)
+    # print(weights)
     with open('../../output/hp_opt/weights.txt', 'a+') as model_summ:
         model_summ.write("model: {}\n\tweights:\n{}\n\tmodel_details:\n{}".format(model, list(weights), tab_results))
 
@@ -247,13 +256,3 @@ if __name__ == "__main__":
         algo=tpe.suggest,
         max_evals=3,
         trials=Trials())
-
-    # X_train, X_test, y_train, y_test = get_data()
-
-    # print((X_train.shape))
-    # print((X_test.shape))
-    # print((y_train.shape))
-    # print((y_test.shape))
-
-    # model_dict = create_model(X_train, X_test, y_train, y_test)
-    # print(model_dict)

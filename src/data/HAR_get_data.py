@@ -245,8 +245,8 @@ if __name__ == '__main__':
     t, b, six, all_1h, all_l = fetch_and_format(data, l , s)
 
     write_data(t,b,all_1h,all_l)
-    
+
     print()
-    print("------------------------------------------------")
+    print("|----------------------------------------------|")
     print("| CSV's written to folder accelstm/output/test |")
-    print("------------------------------------------------")
+    print("|----------------------------------------------|")
