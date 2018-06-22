@@ -224,7 +224,7 @@ def create_model(trainx_windows, testx_windows, trainy, testy):
         results = []
 
     print(trainx_windows.shape)
-    results = model.fit(trainx_windows, trainy, epochs=10000, batch_size={{choice(np.arange(32, 450))}}, validation_split=0.2, callbacks=[early_stop]) #, model_saver])
+    result = model.fit(trainx_windows, trainy, epochs=10000, batch_size={{choice(np.arange(32, 450))}}, validation_split=0.2, callbacks=[early_stop]) #, model_saver])
     score, acc = model.evaluate(testx_windows, testy, verbose=1)
     # valLoss = result.history['val_mean_absolute_error'][-1]
     parameters = space
