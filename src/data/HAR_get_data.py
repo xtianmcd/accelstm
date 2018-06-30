@@ -72,6 +72,7 @@ def fetch_and_format(file_dict, label_fp, subject_fp):
                 body_y = pd.concat([body_y,data], ignore_index=True)
             elif "_z_" in filename:
                 body_z = pd.concat([body_z,data], ignore_index=True)
+        # print(total_x.shape)
 
     print("Initial (windowed axis-wise) data:")
     print(total_x.shape)
@@ -128,14 +129,18 @@ def fetch_and_format(file_dict, label_fp, subject_fp):
     unique_labels = set(all_labels)
     # print(unique_labels)
 
+    # print("labels halved")
     # print(np.asarray(all_labels).shape)
+    # print()
     # print(np.asarray(all_subjects).shape)
 
     # expand the window-wise labels/subject nums to time step-wise granularity
     all_labels   = [label for label in all_labels for ts in range(128)]
     all_subjects = np.array([subject for subject in all_subjects for ts in range(128)])
 
+    # print("expanded")
     # print(np.asarray(all_labels).shape)
+    # print()
     # print(np.asarray(all_subjects).shape)
 
     # Generate one-hot labels

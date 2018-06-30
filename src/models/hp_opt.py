@@ -120,41 +120,7 @@ def get_data():
 
 def create_model(trainx_windows, testx_windows, trainy, testy):
 
-    lstm_one = LSTM(input_shape=(128,3), units={{choice(np.arange(2,512))}},\
-                    activation={{choice(['softmax', 'tanh', 'sigmoid', 'relu', 'linear'])}},\
-                    recurrent_activation={{choice(['softmax', 'tanh', 'sigmoid', 'relu', 'linear'])}},\
-                    use_bias={{choice([True, False])}},\
-                    kernel_initializer={{choice(['zeros', 'ones', RandomNormal(), RandomUniform(minval=-1, maxval=1, seed=None), Constant(value=0.1), 'orthogonal', 'lecun_normal', 'glorot_uniform'])}},\
-                    recurrent_initializer={{choice(['zeros', 'ones', RandomNormal(), RandomUniform(minval=-1, maxval=1, seed=None), Constant(value=0.1), 'orthogonal', 'lecun_normal', 'glorot_uniform'])}},\
-                    unit_forget_bias=True,\
-                    kernel_regularizer={{choice([None,'l2', 'l1'])}},\
-                    recurrent_regularizer={{choice([None,'l2', 'l1'])}},\
-                    bias_regularizer={{choice([None,'l2', 'l1'])}},\
-                    activity_regularizer={{choice([None,'l2', 'l1'])}},\
-                    kernel_constraint=None, recurrent_constraint=None,\
-                    bias_constraint=None, dropout={{uniform(0, 1)}},\
-                    recurrent_dropout={{uniform(0, 1)}},\
-                    return_sequences=False, return_state=False,\
-                    go_backwards=False, stateful=False, unroll=False)
-
     lstm_input = LSTM(input_shape=(128,3), units={{choice(np.arange(2,512))}},\
-                    activation={{choice(['softmax', 'tanh', 'sigmoid', 'relu', 'linear'])}},\
-                    recurrent_activation={{choice(['softmax', 'tanh', 'sigmoid', 'relu', 'linear'])}},\
-                    use_bias={{choice([True, False])}},\
-                    kernel_initializer={{choice(['zeros', 'ones', RandomNormal(), RandomUniform(minval=-1, maxval=1, seed=None), Constant(value=0.1), 'orthogonal', 'lecun_normal', 'glorot_uniform'])}},\
-                    recurrent_initializer={{choice(['zeros', 'ones', RandomNormal(), RandomUniform(minval=-1, maxval=1, seed=None), Constant(value=0.1), 'orthogonal', 'lecun_normal', 'glorot_uniform'])}},\
-                    unit_forget_bias=True,\
-                    kernel_regularizer={{choice([None,'l2', 'l1'])}},\
-                    recurrent_regularizer={{choice([None,'l2', 'l1'])}},\
-                    bias_regularizer={{choice([None,'l2', 'l1'])}},\
-                    activity_regularizer={{choice([None,'l2', 'l1'])}},\
-                    kernel_constraint=None, recurrent_constraint=None,\
-                    bias_constraint=None, dropout={{uniform(0, 1)}},\
-                    recurrent_dropout={{uniform(0, 1)}},\
-                    return_sequences=True, return_state=False,\
-                    go_backwards=False, stateful=False, unroll=False)
-
-    lstm_n = LSTM(units={{choice(np.arange(2,512))}},\
                     activation={{choice(['softmax', 'tanh', 'sigmoid', 'relu', 'linear'])}},\
                     recurrent_activation={{choice(['softmax', 'tanh', 'sigmoid', 'relu', 'linear'])}},\
                     use_bias={{choice([True, False])}},\
@@ -189,30 +155,16 @@ def create_model(trainx_windows, testx_windows, trainy, testy):
                     go_backwards=False, stateful=False, unroll=False)
 
     model = Sequential()
-    # if conditional({{choice([1,3])}}) == 1:
-    # model.add(lstm_one)
-        # if conditional({{choice([0,1])}}) == 1: model.add(BatchNormalization())
-    # elif conditional({{choice([1,2,3])}}) == 2:
     model.add(lstm_input)
     if conditional({{choice([0,1])}}) == 1: model.add(BatchNormalization())
     model.add(lstm_last)
     if conditional({{choice([0,1])}}) == 1: model.add(BatchNormalization())
-    # elif conditional({{choice([1,2,3])}}) == 3:
-    #     model.add(lstm_input)
-    #     if conditional({{choice([0,1])}}) == 1: model.add(BatchNormalization())
-    #     model.add(lstm_n)
-    #     if conditional({{choice([0,1])}}) == 1: model.add(BatchNormalization())
-    #     model.add(lstm_last)
-    #     if conditional({{choice([0,1])}}) == 1: model.add(BatchNormalization())
     model.add(Dense(6))
     model.add(Activation('softmax'))
 
     adam_lr = keras.optimizers.Adam(lr={{choice([10**-6, 10**-5, 10**-4, 10**-3, 10**-2, 10**-1])}}, clipnorm=1.)
     rmsprop_lr = keras.optimizers.RMSprop(lr={{choice([10**-6, 10**-5, 10**-4, 10**-3, 10**-2, 10**-1])}}, clipnorm=1.)
     sgd_lr = keras.optimizers.SGD(lr={{choice([10**-6, 10**-5, 10**-4, 10**-3, 10**-2, 10**-1])}}, clipnorm=1.)
-
-    # model.compile(optimizer={{choice(['sgd', 'rmsprop', 'adagrad', 'adadelta', 'nadam', 'adam'])}},
-    #       loss='categorical_crossentropy', metrics=['accuracy'])
 
     optims = {{choice(['adam', 'sgd', 'rmsprop', 'adagrad', 'nadam', 'adadelta'])}}
     if optims == 'adam': optim = adam_lr
@@ -232,7 +184,7 @@ def create_model(trainx_windows, testx_windows, trainy, testy):
         results = []
 
     print(trainx_windows.shape)
-    result = model.fit(trainx_windows, trainy, epochs=10000, batch_size={{choice(np.arange(32, 450))}}, validation_split=0.2, callbacks=[early_stop]) #, model_saver])
+    result = model.fit(trainx_windows, trainy, epochs=500, batch_size={{choice(np.arange(32, 450))}}, validation_split=0.2, callbacks=[early_stop]) #, model_saver])
     score, acc = model.evaluate(testx_windows, testy, verbose=1)
     # valLoss = result.history['val_mean_absolute_error'][-1]
     parameters = space
@@ -243,7 +195,7 @@ def create_model(trainx_windows, testx_windows, trainy, testy):
     weights = model.get_weights()
     # print(weights)
     with open('../../output/hp_opt/weights.txt', 'a+') as model_summ:
-        model_summ.write("model: {}\n\tweights:\n{}\n\tmodel_details:\n{}".format(model, list(weights), tab_results))
+        model_summ.write("model: {}\n\tweights:\n{}\n\tmodel_details:\n{}\n\tscore:\t{}".format(model, list(weights), tab_results, acc))
 
     # print(tab_results)
 
@@ -254,5 +206,5 @@ if __name__ == "__main__":
     best_run, best_model = optim.minimize(model=create_model,
         data=get_data,
         algo=tpe.suggest,
-        max_evals=3,
+        max_evals=100000,
         trials=Trials())
