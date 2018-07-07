@@ -41,6 +41,30 @@ def get_filepaths(mainfolder):
     return data_filepaths, labels, subject
 
 def fetch_and_format(file_dict, label_fp, subject_fp):
+    """
+    Reads in the data and converts from initial format (single-axis windowed
+    signals pre-split into train/test sets) into desired format for Pipeline
+    (triaxial contiguous time series separated by record/individual).
+
+    Parameters:
+    -------------
+    file_dict:  dictionary of file paths containing the data, returned by
+                get_filepaths()
+    label_fp:   filepath to the document containing the labels for the data,
+                returned by get_filepaths()
+    subject_fp: filepath to the document containing the participant ID's,
+                returned by get_filepaths()
+
+    Returns:
+    -------------
+    triaxial_total:   Triaxial total accelerometer signals
+    triaxial_body:    Triaxial body-only accelerometer signals (gravity
+                      component removed)
+    sixaxial_grouped: Both total and body-only accelerometer signals
+    one_hot_labels:   One-hot vector representations of the labels
+    grouped_labels:   Labels separated by record to match formatting of data
+
+    """
     # initialize data frames and lists
     total_x = pd.DataFrame()
     total_y = pd.DataFrame()
@@ -222,6 +246,10 @@ def fetch_and_format(file_dict, label_fp, subject_fp):
     return triaxial_total, triaxial_body, sixaxial_grouped, one_hot_labels, grouped_labels
 
 def write_data(x_total, x_body, y_data, labels_data):
+    """
+    Writes the re-formatted data returned by fetch_and_format() to CSV's.
+    
+    """
     with open('../../output/test/HAR_X_total.csv', 'w') as HAR_t:
         writer1 = csv.writer(HAR_t)
         for total_data in x_total:

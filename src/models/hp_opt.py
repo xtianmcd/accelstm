@@ -42,7 +42,33 @@ from src.data import HAR_get_data
 # from ..data import HAR_get_data as har #https://stackoverflow.com/questions/20075884/python-import-module-from-another-directory-at-the-same-level-in-project-hierar
 from tabulate import tabulate
 
+
+"""
+__author__ = "Christian McDaniel"
+__license__ = "GPL"
+__version__ = "1.0.1"
+__maintainer__ = "Christian McDaniel"
+__email__ = "clm121@uga.edu"
+
+This file optimizes the hyperparameters of a baseline LSTM model using the TPE
+expected improvement algorithm provided by Hyperas from Hyperopt. 
+
+"""
+
 def get_data():
+    """
+    Calls the necessary functions from the corresponding script in
+    accelstm/src/data to read in and reformat the data to be analyzed.
+
+    Returns:
+    ----------
+    trainx_windows: triaxial windowed training data
+    testx_windows:  triaxial windowed testing data
+    trainy:         one-hot labels for training the model
+    testy:          one-hot labels for evaluating models' predictions
+
+
+    """
     datapath = "../../data/external/"
     dataset="HAR_t"
     # dataset="HMP"
@@ -119,6 +145,25 @@ def get_data():
     return trainx_windows, testx_windows, trainy, testy
 
 def create_model(trainx_windows, testx_windows, trainy, testy):
+    """
+    Used by Hyperas to create and test a unique model by chosing a value at
+    each location wwith double-bracketed ranges of values.
+
+    Parameters:
+    -------------
+    trainx_windows: triaxial windowed training data, returned by get_data()
+    testx_windows:  triaxial windowed testing data, returned by get_data()
+    trainy:         one-hot labels for training the model, returned by get_data()
+    testy:          one-hot labels for evaluating models' predictions, returned
+                    by get_data()
+
+    Returns:
+    -------------
+    loss:   (negative) accuracy of models' predictions
+    status: parameter used by Hyperas
+    model:  baseline LSTM model with unique hyperparameter selections
+
+    """
 
     lstm_input = LSTM(input_shape=(128,3), units={{choice(np.arange(2,512))}},\
                     activation={{choice(['softmax', 'tanh', 'sigmoid', 'relu', 'linear'])}},\

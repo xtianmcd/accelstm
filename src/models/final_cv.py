@@ -27,6 +27,7 @@ import random as rn
 from keras.models import Sequential
 from keras.layers.core import Dense
 from keras.layers import BatchNormalization, LSTM, Activation
+from keras.initializers import Constant
 from keras.callbacks import EarlyStopping
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import ParameterSampler, KFold
@@ -38,7 +39,6 @@ from src.data import HAR_get_data
 from tabulate import tabulate
 np.set_printoptions(threshold='nan')
 
-
 """
 __author__ = "Christian McDaniel"
 __license__ = "GPL"
@@ -46,9 +46,8 @@ __version__ = "1.0.1"
 __maintainer__ = "Christian McDaniel"
 __email__ = "clm121@uga.edu"
 
-This model performs hyperparameter optimization on additional hyperparameters
-not optimized by hp_opt.py.
-
+This file runs 5-fold cross validation on a baseline LSTM model whose
+hyperparameters have been optimized by hp_opt.py and more_opt.py.
 """
 
 def get_data():
@@ -189,14 +188,14 @@ def get_stats(tp, fp, fn, actual):
 
 def create_model(window_size, n_layers):
     """
-    Constructs the model using the parameters provided.
+    Constructs the model using the optimal parameters selected from hp_opt.py
+    and more_opt.py.
 
     Parameters:
     ------------
     window_size: Number of time steps per window, used by input_shape in the
-                 first LSTM layer; chosen by ParameterSampler()
-    n_layers:    Number of LSTM layers in the network, chosen by
-                 ParameterSampler()
+                 first LSTM layer
+    n_layers:    Number of LSTM layers in the network
 
     Returns:
     ------------
@@ -204,65 +203,67 @@ def create_model(window_size, n_layers):
 
     """
 
-    lstm_one = LSTM(input_shape=(window_size,3), units=128,\
+    # lstm_one = LSTM(input_shape=(window_size,3), units=128,\
+    #                 activation='sigmoid',\
+    #                 recurrent_activation='tanh',\
+    #                 use_bias=True,\
+    #                 kernel_initializer='glorot_uniform',\
+    #                 unit_forget_bias=True,\
+    #                 kernel_regularizer=None,\
+    #                 recurrent_regularizer=None,\
+    #                 bias_regularizer=None,\
+    #                 activity_regularizer=None,\
+    #                 kernel_constraint=None, recurrent_constraint=None,\
+    #                 bias_constraint=None, dropout=0.5,\
+    #                 recurrent_dropout=0.5,\
+    #                 return_sequences=False, return_state=False,\
+    #                 go_backwards=False, stateful=False, unroll=False)
+    lstm_input = LSTM(input_shape=(128,3), units=118,\
                     activation='tanh',\
-                    recurrent_activation='sigmoid',\
+                    recurrent_activation='tanh',\
                     use_bias=True,\
-                    kernel_initializer='glorot_uniform',\
+                    kernel_initializer='orthogonal',\
+                    recurrent_initializer='zeros',\
                     unit_forget_bias=True,\
                     kernel_regularizer=None,\
                     recurrent_regularizer=None,\
                     bias_regularizer=None,\
                     activity_regularizer=None,\
                     kernel_constraint=None, recurrent_constraint=None,\
-                    bias_constraint=None, dropout=0.5,\
-                    recurrent_dropout=0.5,\
-                    return_sequences=False, return_state=False,\
-                    go_backwards=False, stateful=False, unroll=False)
-    lstm_input = LSTM(input_shape=(window_size,3), units=128,\
-                    activation='tanh',\
-                    recurrent_activation='sigmoid',\
-                    use_bias=True,\
-                    kernel_initializer='glorot_uniform',\
-                    unit_forget_bias=True,\
-                    kernel_regularizer=None,\
-                    recurrent_regularizer=None,\
-                    bias_regularizer=None,\
-                    activity_regularizer=None,\
-                    kernel_constraint=None, recurrent_constraint=None,\
-                    bias_constraint=None, dropout=0.5,\
-                    recurrent_dropout=0.5,\
+                    bias_constraint=None, dropout=0.303,\
+                    recurrent_dropout=0.458,\
                     return_sequences=True, return_state=False,\
                     go_backwards=False, stateful=False, unroll=False)
-    lstm_n = LSTM(units=128,\
-                    activation='tanh',\
-                    recurrent_activation='sigmoid',\
-                    use_bias=True,\
-                    kernel_initializer='glorot_uniform',\
-                    unit_forget_bias=True,\
-                    kernel_regularizer=None,\
-                    recurrent_regularizer=None,\
-                    bias_regularizer=None,\
-                    activity_regularizer=None,\
-                    kernel_constraint=None, recurrent_constraint=None,\
-                    bias_constraint=None, dropout=0.0,\
-                    recurrent_dropout=0.0,\
-                    return_sequences=True, return_state=False,\
-                    go_backwards=False, stateful=False, unroll=False)
+    # lstm_n = LSTM(units=128,\
+    #                 activation='tanh',\
+    #                 recurrent_activation='sigmoid',\
+    #                 use_bias=True,\
+    #                 kernel_initializer='glorot_uniform',\
+    #                 unit_forget_bias=True,\
+    #                 kernel_regularizer=None,\
+    #                 recurrent_regularizer=None,\
+    #                 bias_regularizer=None,\
+    #                 activity_regularizer=None,\
+    #                 kernel_constraint=None, recurrent_constraint=None,\
+    #                 bias_constraint=None, dropout=0.0,\
+    #                 recurrent_dropout=0.0,\
+    #                 return_sequences=True, return_state=False,\
+    #                 go_backwards=False, stateful=False, unroll=False)
 
-    lstm_last = LSTM(units=114,\
-                    activation='tanh',\
+    lstm_last = LSTM(units=22,\
+                    activation='softmax',\
                     recurrent_activation='sigmoid',\
                     use_bias=True,\
                     kernel_initializer='glorot_uniform',\
+                    recurrent_initializer=Constant(value=0.1),\
                     unit_forget_bias=True,\
                     kernel_regularizer=None,\
-                    recurrent_regularizer=None,\
+                    recurrent_regularizer='l2',\
                     bias_regularizer=None,\
                     activity_regularizer=None,\
                     kernel_constraint=None, recurrent_constraint=None,\
-                    bias_constraint=None, dropout=0.5,\
-                    recurrent_dropout=0.5,\
+                    bias_constraint=None, dropout=0.196,\
+                    recurrent_dropout=0.073,\
                     return_sequences=False, return_state=False,\
                     go_backwards=False, stateful=False, unroll=False)
 
@@ -270,7 +271,9 @@ def create_model(window_size, n_layers):
     if n_layers == 1: model.add(lstm_one)
     elif n_layers == 2:
         model.add(lstm_input)
+        model.add(BatchNormalization())
         model.add(lstm_last)
+        model.add(BatchNormalization())
     elif n_layers == 3:
         model.add(lstm_input)
         model.add(lstm_n)
@@ -283,7 +286,7 @@ def create_model(window_size, n_layers):
 
     model.add(Dense(6))
     model.add(Activation('softmax'))
-    model.compile(optimizer='rmsprop',
+    model.compile(optimizer='nadam',
           loss='categorical_crossentropy', metrics=['accuracy'])
 
 
@@ -307,7 +310,6 @@ def test_model(X, y, params, debug=False):
 
     """
 
-    # print("testing model {}".format(model_num))
     model_acc = []
     model_recall = []
     model_precis = []
@@ -330,7 +332,7 @@ def test_model(X, y, params, debug=False):
     stride = params['stride']
     n_layers = params['n_layers']
 
-    kf = KFold(n_splits=3)
+    kf = KFold(n_splits=5)
     fold=1
     for train_index, test_index in kf.split(np.zeros(len(X)), np.array([i for i in range(30)])):
 
@@ -411,14 +413,13 @@ def test_model(X, y, params, debug=False):
             global results
             results = []
 
-        result = model.fit(X_shuffletrain, y_shuffletrain, epochs=10000, batch_size=64, validation_split=0.2, callbacks=[early_stop]) #, model_saver])
+        result = model.fit(X_shuffletrain, y_shuffletrain, epochs=500, batch_size=140, validation_split=0.2, callbacks=[early_stop]) #, model_saver])
 
         score, acc = model.evaluate(X_shuffletest, y_shuffletest, verbose=1)
         print("Score: {}; acc: {}".format(score, acc))
         predict = model.predict(testx_windows)
 
         fold+=1
-        model_num+=1
 
         tp, fp, fn, ctp, cfp, cfn = multiclass_pred_check(predict, y_shuffletest, 6, debug=True)
         acc, recall, precis, fscore = get_stats(tp, fp, fn, y_shuffletest)
@@ -451,11 +452,15 @@ def test_model(X, y, params, debug=False):
     fp_std = np.std(model_fp)
     fn_mean = np.mean(model_fn)
     fn_std = np.std(model_fn)
+    classwise_acc_mean = {}
+    classwise_recall_mean = {}
+    classwise_precis_mean = {}
+    classwise_fscore_mean = {}
     for k in range(6):
-        classwise_acc_mean = np.mean(mc_classwise_acc[str(k)])
-        classwise_recall_mean = np.mean(mc_classwise_recall[str(k)])
-        classwise_precis_mean = np.mean(mc_classwise_precis[str(k)])
-        classwise_fscore_mean = np.mean(mc_classwise_fscore[str(k)])
+        classwise_acc_mean[str(k)] = np.mean(mc_classwise_acc[str(k)])
+        classwise_recall_mean[str(k)] = np.mean(mc_classwise_recall[str(k)])
+        classwise_precis_mean[str(k)] = np.mean(mc_classwise_precis[str(k)])
+        classwise_fscore_mean[str(k)] = np.mean(mc_classwise_fscore[str(k)])
 
     return acc_mean, acc_std, fscore_mean, fscore_std, tp_mean, fp_mean, fn_mean, tp_std, fp_std, fn_std, recall_mean, recall_std, precis_mean, precis_std, classwise_acc_mean, classwise_precis_mean, classwise_recall_mean, classwise_fscore_mean
 
@@ -468,69 +473,61 @@ if __name__ == "__main__":
     print(X.shape)
     print(y.shape)
 
-    window_size = [24, 64, 128, 192, 256]
-    stride      = [0.25, 0.5, 0.75]
-    n_layers    = [1, 2, 3, 4]
 
-    param_grid = dict(n_layers=n_layers, window_size=window_size, stride=stride)
+    window_size = 128
+    stride      = 0.5
+    n_layers    = 2
+    params = {}
+    params['window_size'] = window_size
+    params['stride'] = stride
+    params['n_layers'] = n_layers
 
-    param_list = list(ParameterSampler(param_grid, n_iter=60))
-
-    model_num=1
-    for d in range(len(params_list)):
-        print("Testing Model #{}: {}".format(model_num, params))
-    acc_mean, acc_std, fscore_mean, fscore_std, tp_mean, fp_mean, fn_mean, tp_std, fp_std, fn_std, recall_mean, recall_std, precis_mean, precis_std, cw_acc_mean, cw_precis_mean, cw_recall_mean, cw_fscore_mean = test_model(X, y)
+    print("Testing Model")
+    acc_mean, acc_std, fscore_mean, fscore_std, tp_mean, fp_mean, fn_mean, tp_std, fp_std, fn_std, recall_mean, recall_std, precis_mean, precis_std, cw_acc_mean, cw_precis_mean, cw_recall_mean, cw_fscore_mean = test_model(X, y, params)
 
     if debug: print("writing to file")
-    f = open('model_results.txt', 'a')
+    f = open('../../output/final_cv/final_model_results.txt', 'a')
     f.write("Params for model\n")
-    f.write("Overall Performance:\n\tAccuracy: {0:.4f}%\n\tRecall: {0:.4f}\n\tPrecision: {0:.4f}\n\tF1Score: {0:.4f}\n".format(acc*100, recall, precis, fscore))
+    f.write("Overall Performance:\n\tAccuracy: {0:.4f}% +/- {0:.4f}\n\tRecall: {0:.4f} +/- {0:.4f}\n\tPrecision: {0:.4f} +/- {0:.4f}\n\tF1Score: {0:.4f} +/- {0:.4f}\n".format(acc_mean*100, acc_std, recall_mean, recall_std, precis_mean, precis_std, fscore_mean, fscore_std))
     f.write("Class-specific Accuracies:\n\t")
     for k in range(6):
-        f.write("Class {}: {}%; ".format(k, mc_classwise_acc[str(k)]))
+        f.write("Class {}: {}%; ".format(k, cw_acc_mean[str(k)]))
     f.write('\n')
     f.write("Class-specific Precisions:\n\t")
     for k in range(6):
-        f.write("Class {}: {}%; ".format(k, mc_classwise_precis[str(k)]))
+        f.write("Class {}: {}%; ".format(k, cw_precis_mean[str(k)]))
     f.write('\n')
     f.write("Class-specific Recall:\n\t")
     for k in range(6):
-        f.write("Class {}: {}%; ".format(k, mc_classwise_recall[str(k)]))
+        f.write("Class {}: {}%; ".format(k, cw_recall_mean[str(k)]))
     f.write('\n')
     f.write("Class-specific FScore:\n\t")
     for k in range(6):
-        f.write("Class {}: {}%; ".format(k, mc_classwise_fscore[str(k)]))
+        f.write("Class {}: {}%; ".format(k, cw_fscore_mean[str(k)]))
     f.write('\n')
-    f.write("Results: tp:{}, fp:{}, fn:{}\n".format(tp, fp, fn))
-    f.write("Class-specific Stats:\n\t")
-    for k in range(6):
-        f.write("Class {}: tp:{}, fp:{}, fn:{}".format(k, ctp, cfp, cfn))
+    f.write("Results: tp:{}, fp:{}, fn:{}\n".format(tp_mean, fp_mean, fn_mean))
     f.write('\n')
     f.write('\n\n')
     f.close()
 
     print("Params for model")
-    print("Overall Performance:\n\tAccuracy: {0:.4f}%\n\tRecall: {0:.4f}\n\tPrecision: {0:.4f}\n\tF1Score: {0:.4f}".format(acc*100, recall, precis, fscore))
+    print("Overall Performance:\n\tAccuracy: {0:.4f}% +/- {0:.4f}\n\tRecall: {0:.4f} +/- {0:.4f}\n\tPrecision: {0:.4f} +/- {0:.4f}\n\tF1Score: {0:.4f} +/- {0:.4f}\n".format(acc_mean*100, acc_std, recall_mean, recall_std, precis_mean, precis_std, fscore_mean, fscore_std))
     print("Class-specific Accuracies:\n\t")
     for k in range(6):
-        print("Class {}: {}%; ".format(k, mc_classwise_acc[str(k)]))
+        print("Class {}: {}%; ".format(k, cw_acc_mean[str(k)]))
     print()
     print("Class-specific Precisions:\n\t")
     for k in range(6):
-        print("Class {}: {}%; ".format(k, mc_classwise_precis[str(k)]))
+        print("Class {}: {}%; ".format(k, cw_precis_mean[str(k)]))
     print()
     print("Class-specific Recall:\n\t")
     for k in range(6):
-        print("Class {}: {}%; ".format(k, mc_classwise_recall[str(k)]))
+        print("Class {}: {}%; ".format(k, cw_recall_mean[str(k)]))
     print()
     print("Class-specific FScore:\n\t")
     for k in range(6):
-        print("Class {}: {}%; ".format(k, mc_classwise_fscore[str(k)]))
+        print("Class {}: {}%; ".format(k, cw_fscore_mean[str(k)]))
     print()
-    print("Results: tp:{}, fp:{}, fn:{}\n".format(tp, fp, fn))
-    print("Class-specific Stats:\n\t")
-    for k in range(6):
-        print("Class {}: tp:{}, fp:{}, fn:{}".format(k, ctp, cfp, cfn))
+    print("Results: tp:{}, fp:{}, fn:{}\n".format(tp_mean, fp_mean, fn_mean))
     print()
     print()
-    model_num +=1
