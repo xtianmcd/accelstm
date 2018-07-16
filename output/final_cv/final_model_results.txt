@@ -1,9 +1,0 @@
-Params for model
-Params for model
-Overall Performance:
-	Accuracy: 16.6536% +/- 16.6536
-	Recall: 16.6536 +/- 16.6536
-	Precision: 16.6536 +/- 16.6536
-	F1Score: 16.6536 +/- 16.6536
-Class-specific Accuracies:
-	
