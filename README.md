@@ -1,7 +1,7 @@
 # accelstm
 ## Developing a Start-to-Finish Pipeline for Accelerometer-Based Activity Recognition Using Long Short-Term Memory Recurrent Neural Networks
 
-This repository contains the source code associated with the SciPy 2018 Proceedings paper and associated poster "Developing a Start-to-Finish Pipeline for Accelerometer-Based Activity Recognition Using Long Short-Term Memory Recurrent Neural Networks.”
+This repository contains the source code associated with the [SciPy 2018 Proceedings paper] (http://conference.scipy.org/proceedings/scipy2018/christian_mcdaniel.html) and associated [poster](https://github.com/xtianmcd/accelstm/blob/master/docs/LSTM_poster.pptx) "Developing a Start-to-Finish Pipeline for Accelerometer-Based Activity Recognition Using Long Short-Term Memory Recurrent Neural Networks.”
 
 **Accelerometer data** is read in and formatted for a Data Analysis Pipeline within the folder `src/data/`.
 In `src/models/`, a **baseline LSTM is optimized** based on a wide range of hyperparameter settings found throughout literature (i.e., a 30-study meta-analysis style overview of the field of human activity recognition (HAR) using LSTM models). 
